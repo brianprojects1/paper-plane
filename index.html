@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Paper Plane</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' rx='28' fill='%234f46e5'/%3E%3Cpath d='M104 24 24 58l28 12 12 30z' fill='%23fff'/%3E%3C/svg%3E">
+<style>
+body{font:16px system-ui,sans-serif;background:#f4f5f7;display:grid;place-items:center;min-height:100vh;margin:0}
+.card{background:#fff;padding:2rem;border-radius:14px;box-shadow:0 2px 12px #0001;max-width:400px;width:calc(100% - 2rem);box-sizing:border-box}
+.brand{display:flex;align-items:center;gap:.6rem;font-weight:700;margin-bottom:1.2rem;color:#4338ca;font-size:1.2rem}
+h1{font-size:1.05rem;margin:0 0 .25rem;word-break:break-all}
+p{color:#666;margin:.25rem 0 1rem}
+input,button{font:inherit;padding:.6rem .8rem;border-radius:8px;width:100%;box-sizing:border-box}
+input{border:1px solid #ccc;margin-bottom:.75rem}
+button{border:0;background:#4f46e5;color:#fff;cursor:pointer}button:disabled{background:#9ca3af;cursor:default}
+progress{width:100%;margin:.5rem 0}
+.err{color:#b00020}.ok{color:#166534}.small{font-size:.85rem;color:#666}
+[hidden]{display:none!important}
+</style></head><body>
+<div class="card">
+  <div class="brand">
+    <svg width="40" height="40" viewBox="0 0 128 128"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4f46e5"/><stop offset="1" stop-color="#0ea5e9"/></linearGradient></defs><rect width="128" height="128" rx="28" fill="url(#g)"/><path d="M104 24 24 58l28 12 12 30z" fill="#fff"/><path d="M104 24 52 70l6 12z" fill="#c7d2fe"/></svg>
+    Paper Plane
+  </div>
+  <h1 id="name">Connecting…</h1>
+  <p id="info"></p>
+  <input id="pw" type="password" placeholder="Password" hidden>
+  <button id="btn" hidden>Download</button>
+  <progress id="bar" max="100" value="0" hidden></progress>
+  <p id="msg" class="small"></p>
+</div>
+
+<script>
+const BROKER = "wss://0.peerjs.com/peerjs";
+const ICE = [
+  { urls: "stun:stun.l.google.com:19302" },
+  { urls: "stun:stun1.l.google.com:19302" },
+  { urls: "stun:stun.cloudflare.com:3478" },
+];
+
+/*PROTOCOL*/
+const ACK_EVERY = 8 * 1024 * 1024;
+
+// Speaks the protocol with the sender. h = hooks: write(buf), finish(), written(),
+// onHello, onAuth, onLocked, onProgress, onDone, onFail
+function makeReceiver(dc, h) {
+  dc.binaryType = "arraybuffer";
+  let queue = Promise.resolve();
+  let sinceAck = 0;
+  let failed = false;
+  const send = (o) => { if (dc.readyState === "open") dc.send(JSON.stringify(o)); };
+  const fail = (msg) => { if (!failed) { failed = true; h.onFail(msg); } };
+
+  dc.onmessage = (ev) => {
+    if (typeof ev.data === "string") {
+      let m; try { m = JSON.parse(ev.data); } catch { return; }
+      if (m.t === "hello") h.onHello(m);
+      else if (m.t === "auth") h.onAuth(m);
+      else if (m.t === "locked") h.onLocked(m);
+      else if (m.t === "expired") fail("This link has expired.");
+      else if (m.t === "error") fail(m.msg || "Error from the sender.");
+      else if (m.t === "done") {
+        queue = queue.then(async () => {
+          if (failed) return;
+          await h.finish();
+          h.onDone();
+        }).catch((e) => fail("Saving failed: " + e.message));
+      }
+    } else {
+      const buf = ev.data;
+      queue = queue.then(async () => {
+        if (failed) return;
+        await h.write(buf);
+        sinceAck += buf.byteLength;
+        h.onProgress();
+        if (sinceAck >= ACK_EVERY) { sinceAck = 0; send({ t: "ack", bytes: h.written() }); }
+      }).catch((e) => fail("Writing failed: " + e.message));
+    }
+  };
+  return {
+    auth: (pw) => send({ t: "auth", pw }),
+    start: (offset) => send({ t: "start", offset }),
+    drained: () => queue,
+  };
+}
+/*END PROTOCOL*/
+
+const $ = (id) => document.getElementById(id);
+const fmt = (b) =>
+  b >= 1024 ** 3 ? (b / 1024 ** 3).toFixed(2) + " GB" : b >= 1048576 ? (b / 1048576).toFixed(1) + " MB" : Math.ceil(b / 1024) + " KB";
+const rand = (n) => Array.from(crypto.getRandomValues(new Uint8Array(n)), (x) => "abcdefghijkmnpqrstuvwxyz23456789"[x % 32]).join("");
+
+const senderId = location.hash.slice(1);
+const state = { info: null, sink: null, authed: false, pw: "", done: false, rx: null, pc: null, ws: null, retries: 0, t0: 0, started: false };
+
+function say(text, cls = "small") { $("msg").textContent = text; $("msg").className = cls; }
+function fatal(text) {
+  state.done = true;
+  $("btn").hidden = true; $("pw").hidden = true; $("bar").hidden = true;
+  say(text, "err");
+  closeConn();
+}
+function closeConn() {
+  try { state.ws && state.ws.close(); } catch {}
+  try { state.pc && state.pc.close(); } catch {}
+}
+
+// ---------- storage: straight to disk (Chrome/Edge) or in memory ----------
+async function makeSink(info) {
+  if (window.showSaveFilePicker) {
+    const handle = await window.showSaveFilePicker({ suggestedName: info.name });
+    const w = await handle.createWritable();
+    return { bytes: 0, async write(b) { await w.write(b); this.bytes += b.byteLength; }, async close() { await w.close(); } };
+  }
+  const chunks = [];
+  return {
+    bytes: 0,
+    async write(b) { chunks.push(b); this.bytes += b.byteLength; },
+    async close() {
+      const url = URL.createObjectURL(new Blob(chunks));
+      const a = document.createElement("a");
+      a.href = url; a.download = info.name; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    },
+  };
+}
+
+// ---------- connecting to the sender ----------
+function connect() {
+  closeConn();
+  const myId = "lp-r-" + rand(14), cid = rand(10);
+  const ws = new WebSocket(`${BROKER}?key=peerjs&id=${myId}&token=${rand(12)}`);
+  state.ws = ws;
+  const pc = new RTCPeerConnection({ iceServers: ICE });
+  state.pc = pc;
+  const dc = pc.createDataChannel("paperplane", { ordered: true });
+  let gotAnswer = false, opened = false, remoteSet = false;
+  const pendingCand = [];
+  const hb = setInterval(() => ws.readyState === 1 && ws.send(JSON.stringify({ type: "HEARTBEAT" })), 5000);
+  const wsSend = (o) => ws.readyState === 1 && ws.send(JSON.stringify(o));
+
+  say("Connecting to the sender…");
+
+  const timeout = setTimeout(() => {
+    if (!opened) {
+      clearInterval(hb);
+      retryOrFail(gotAnswer
+        ? "Could not make a direct connection. This may be a firewall or network issue; try another network (for example mobile data)."
+        : "The sender is not online. Ask the sender to keep the Paper Plane tab open.");
+    }
+  }, 25000);
+
+  pc.onicecandidate = (e) => { if (e.candidate) wsSend({ type: "CANDIDATE", dst: senderId, payload: { candidate: e.candidate.toJSON(), cid } }); };
+
+  ws.onmessage = async (ev) => {
+    let m; try { m = JSON.parse(ev.data); } catch { return; }
+    if (m.type === "OPEN") {
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      wsSend({ type: "OFFER", dst: senderId, payload: { sdp: pc.localDescription.toJSON(), cid } });
+    } else if (m.type === "ANSWER" && m.src === senderId && m.payload.cid === cid) {
+      gotAnswer = true;
+      await pc.setRemoteDescription(m.payload.sdp);
+      remoteSet = true;
+      pendingCand.splice(0).forEach((c) => pc.addIceCandidate(c).catch(() => {}));
+    } else if (m.type === "CANDIDATE" && m.src === senderId && m.payload.cid === cid) {
+      remoteSet ? pc.addIceCandidate(m.payload.candidate).catch(() => {}) : pendingCand.push(m.payload.candidate);
+    } else if (m.type === "ID-TAKEN") {
+      fatal("Something went wrong with the connection. Refresh the page.");
+    }
+  };
+
+  dc.onopen = () => { opened = true; clearTimeout(timeout); clearInterval(hb); ws.close(); };
+  dc.onclose = async () => {
+    clearInterval(hb);
+    if (state.done || !opened || state.pc !== pc) return;
+    // Connection dropped: finish writing what arrived, then resume automatically
+    say("Connection lost, reconnecting…");
+    await state.rx.drained();
+    retryOrFail("Connection lost and could not be restored. Open the link again and choose the same file.");
+  };
+
+  state.rx = makeReceiver(dc, {
+    write: (b) => state.sink.write(b),
+    finish: () => state.sink.close(),
+    written: () => state.sink.bytes,
+    onHello: onHello,
+    onAuth: onAuth,
+    onLocked: (m) => say(`Too many wrong attempts. Try again in ${m.mins} min.`, "err"),
+    onProgress: onProgress,
+    onDone: () => {
+      state.done = true;
+      $("bar").value = 100;
+      $("btn").hidden = true;
+      say("Done! The file has been saved.", "ok");
+      closeConn();
+    },
+    onFail: fatal,
+  });
+}
+
+let retryTimer = null;
+function retryOrFail(finalMsg) {
+  if (state.done) return;
+  if (state.retries >= (state.sink ? 30 : 2)) return fatal(finalMsg);
+  state.retries++;
+  clearTimeout(retryTimer);
+  retryTimer = setTimeout(connect, 3000);
+}
+
+// ---------- protocol events ----------
+function onHello(info) {
+  state.info = info;
+  state.retries = 0;
+  $("name").textContent = info.name;
+  $("info").textContent = fmt(info.size);
+  if (info.lockedMins) say(`Too many wrong attempts. Try again in ${info.lockedMins} min.`, "err");
+  else say("");
+
+  if (state.sink) { // resuming after a dropped connection
+    if (info.protected) state.rx.auth(state.pw); else state.rx.start(state.sink.bytes);
+    return;
+  }
+  if (!state.started) {
+    $("pw").hidden = !info.protected;
+    $("btn").hidden = false;
+    $("btn").disabled = false;
+    $("btn").textContent = "Download";
+  }
+}
+
+function onAuth(m) {
+  if (m.ok) {
+    state.authed = true;
+    if (state.sink) { state.rx.start(state.sink.bytes); return; }
+    $("pw").hidden = true;
+    beginSave(true);
+  } else {
+    $("btn").disabled = false;
+    say(`Wrong password. ${m.left} ${m.left === 1 ? "attempt" : "attempts"} left.`, "err");
+  }
+}
+
+async function beginSave(auto) {
+  let sink;
+  try {
+    sink = await makeSink(state.info);
+  } catch (e) {
+    if (e.name === "AbortError") { $("btn").disabled = false; $("btn").textContent = "Choose save location"; $("btn").hidden = false; return; }
+    if (auto && (e.name === "SecurityError" || e.name === "NotAllowedError")) {
+      $("btn").disabled = false; $("btn").textContent = "Choose save location"; $("btn").hidden = false;
+      say("Password correct. Now choose where to save the file.", "ok");
+      return;
+    }
+    return fatal("Could not open the file: " + e.message);
+  }
+  state.sink = sink;
+  state.started = true;
+  state.t0 = Date.now();
+  $("btn").hidden = true;
+  $("bar").hidden = false;
+  say(window.showSaveFilePicker || state.info.size < 1.5 * 1024 ** 3
+    ? "Downloading… keep this tab open."
+    : "Note: this browser keeps the file in memory. Use Chrome or Edge for large files.", "small");
+  state.rx.start(0);
+}
+
+$("btn").addEventListener("click", () => {
+  if (!state.info) return;
+  if (state.info.protected && !state.authed) {
+    state.pw = $("pw").value;
+    if (!state.pw) return;
+    $("btn").disabled = true;
+    state.rx.auth(state.pw);
+  } else {
+    beginSave(false);
+  }
+});
+
+function onProgress() {
+  const done = state.sink.bytes, size = state.info.size;
+  $("bar").value = (done / size) * 100;
+  const secs = Math.max((Date.now() - state.t0) / 1000, 1);
+  const speed = done / secs;
+  const left = Math.round((size - done) / Math.max(speed, 1));
+  $("msg").textContent = `${fmt(done)} of ${fmt(size)} · ${fmt(speed)}/s · about ${left >= 3600 ? Math.round(left / 360) / 10 + " h" : left >= 60 ? Math.ceil(left / 60) + " min" : left + " s"} left`;
+}
+
+window.addEventListener("beforeunload", (e) => { if (state.started && !state.done) { e.preventDefault(); e.returnValue = ""; } });
+
+if (!senderId) fatal("This is not a valid link.");
+else if (!window.RTCPeerConnection) fatal("This browser does not support direct connections.");
+else connect();
+</script>
+</body></html>
