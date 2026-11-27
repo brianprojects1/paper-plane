@@ -1,53 +1,510 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8">
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex">
 <title>Paper Plane</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' rx='28' fill='%234f46e5'/%3E%3Cpath d='M104 24 24 58l28 12 12 30z' fill='%23fff'/%3E%3C/svg%3E">
 <style>
-body{font:16px system-ui,sans-serif;background:#f4f5f7;display:grid;place-items:center;min-height:100vh;margin:0}
-.card{background:#fff;padding:2rem;border-radius:14px;box-shadow:0 2px 12px #0001;max-width:400px;width:calc(100% - 2rem);box-sizing:border-box}
-.brand{display:flex;align-items:center;gap:.6rem;font-weight:700;margin-bottom:1.2rem;color:#4338ca;font-size:1.2rem}
-h1{font-size:1.05rem;margin:0 0 .25rem;word-break:break-all}
-p{color:#666;margin:.25rem 0 1rem}
-input,button{font:inherit;padding:.6rem .8rem;border-radius:8px;width:100%;box-sizing:border-box}
-input{border:1px solid #ccc;margin-bottom:.75rem}
-button{border:0;background:#4f46e5;color:#fff;cursor:pointer}button:disabled{background:#9ca3af;cursor:default}
-progress{width:100%;margin:.5rem 0}
-.err{color:#b00020}.ok{color:#166534}.small{font-size:.85rem;color:#666}
+:root{--bg:#f4f6fb;--card:#fff;--text:#0f172a;--muted:#64748b;--line:#e2e8f0;--accent:#4f46e5;--accent2:#0ea5e9;--ok:#16a34a;--err:#dc2626;--chip:#eef2ff;--input:#fff;--shadow:0 10px 30px rgba(15,23,42,.08)}
+[data-theme=dark]{--bg:#0b1020;--card:#131a2e;--text:#e5e7eb;--muted:#94a3b8;--line:#243049;--chip:#1b2547;--input:#0f1527;--shadow:0 10px 30px rgba(0,0,0,.45)}
+*{box-sizing:border-box}
+body{margin:0;font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--text);background:var(--bg);min-height:100vh;
+ background-image:radial-gradient(60rem 30rem at 85% -10%,rgba(14,165,233,.18),transparent),radial-gradient(50rem 30rem at -10% 10%,rgba(79,70,229,.18),transparent);background-attachment:fixed}
+header{display:flex;align-items:center;justify-content:space-between;gap:1rem;max-width:760px;margin:0 auto;padding:1.2rem 1rem}
+.brand{display:flex;align-items:center;gap:.65rem;font-weight:800;font-size:1.25rem;letter-spacing:-.01em}
+.brand span{background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.tools{display:flex;gap:.5rem;align-items:center}
+main{max-width:760px;margin:0 auto;padding:0 1rem 3rem}
+h1{font-size:clamp(1.6rem,4.5vw,2.3rem);line-height:1.15;margin:1rem 0 .4rem;letter-spacing:-.02em}
+.lead{color:var(--muted);margin:0 0 1.4rem}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:1.3rem;box-shadow:var(--shadow);margin-bottom:1rem}
+.drop{border:2px dashed var(--line);border-radius:14px;padding:2.2rem 1rem;text-align:center;color:var(--muted);cursor:pointer;transition:.15s}
+.drop:hover,.drop.over{border-color:var(--accent);background:var(--chip);color:var(--text)}
+.drop b{color:var(--text);display:block;font-size:1.05rem;margin-bottom:.2rem}
+.picked{margin:.8rem 0 0;display:flex;flex-direction:column;gap:.35rem}
+.pick{display:flex;justify-content:space-between;gap:.6rem;background:var(--chip);border-radius:10px;padding:.45rem .7rem;font-size:.92rem}
+.pick span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pick span:last-child{color:var(--muted);white-space:nowrap}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:.8rem;margin-top:1rem}
+label{display:block;font-size:.82rem;font-weight:600;color:var(--muted)}
+input,select,button{font:inherit;color:inherit}
+input,select{width:100%;margin-top:.3rem;padding:.6rem .75rem;border-radius:10px;border:1px solid var(--line);background:var(--input)}
+input:focus,select:focus{outline:2px solid var(--accent);outline-offset:1px}
+.pwrow{display:flex;gap:.4rem}.pwrow input{flex:1}
+.btn{border:0;border-radius:10px;padding:.65rem 1rem;cursor:pointer;font-weight:600;color:#fff;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:.15s}
+.btn:hover{filter:brightness(1.08)}.btn:disabled{filter:grayscale(1);opacity:.5;cursor:default}
+.btn.ghost{background:var(--chip);color:var(--accent)}[data-theme=dark] .btn.ghost{color:#a5b4fc}
+.btn.danger{background:#fee2e2;color:#991b1b}[data-theme=dark] .btn.danger{background:#3b1620;color:#fca5a5}
+.btn.small{padding:.4rem .7rem;font-size:.85rem}.btn.full{width:100%;margin-top:1rem;padding:.8rem}
+.iconbtn{border:1px solid var(--line);background:var(--card);border-radius:10px;width:2.4rem;height:2.4rem;cursor:pointer;font-size:1.05rem}
+.chip{display:inline-flex;align-items:center;gap:.45rem;border:1px solid var(--line);background:var(--card);border-radius:999px;padding:.3rem .75rem;font-size:.85rem;cursor:pointer;color:var(--text)}
+.dot{width:.6rem;height:.6rem;border-radius:50%;background:#94a3b8;display:inline-block}.dot.on{background:var(--ok)}.dot.mid{background:#f59e0b}.dot.off{background:var(--err)}
+.row{display:flex;gap:.5rem;align-items:center}.between{justify-content:space-between;align-items:flex-start}
+.fname{font-weight:700;word-break:break-all}.meta{color:var(--muted);font-size:.85rem}
+.linkrow{display:flex;gap:.5rem;margin-top:.8rem}.linkrow input{margin:0;flex:1;font-size:.9rem}
+.bar{height:8px;background:var(--chip);border-radius:99px;overflow:hidden;margin-top:.8rem}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .2s}
+.status{font-size:.88rem;color:var(--muted);margin-top:.6rem;display:flex;align-items:center;gap:.45rem}
+.err{color:var(--err)}.ok{color:var(--ok)}
+details{margin-top:.6rem;font-size:.82rem;color:var(--muted)}summary{cursor:pointer}
+pre{margin:.4rem 0 0;max-height:170px;overflow:auto;white-space:pre-wrap;background:var(--chip);border-radius:10px;padding:.6rem;color:var(--text);font:12px/1.5 ui-monospace,Consolas,monospace}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:.8rem;margin-top:1.4rem}
+.step{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:.9rem}
+.step b{display:block;margin-bottom:.15rem}.step span{color:var(--muted);font-size:.88rem}
+.big{font-size:2.6rem;line-height:1}.center{text-align:center}
+footer{text-align:center;color:var(--muted);font-size:.82rem;padding:0 1rem 2rem}
+.panel{margin-top:.6rem;padding:.7rem .9rem;border:1px solid var(--line);border-radius:12px;background:var(--card);font-size:.88rem}
 [hidden]{display:none!important}
-</style></head><body>
-<div class="card">
+</style>
+</head>
+<body>
+<header>
   <div class="brand">
-    <svg width="40" height="40" viewBox="0 0 128 128"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4f46e5"/><stop offset="1" stop-color="#0ea5e9"/></linearGradient></defs><rect width="128" height="128" rx="28" fill="url(#g)"/><path d="M104 24 24 58l28 12 12 30z" fill="#fff"/><path d="M104 24 52 70l6 12z" fill="#c7d2fe"/></svg>
-    Paper Plane
+    <svg width="38" height="38" viewBox="0 0 128 128"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4f46e5"/><stop offset="1" stop-color="#0ea5e9"/></linearGradient></defs><rect width="128" height="128" rx="28" fill="url(#g)"/><path d="M104 24 24 58l28 12 12 30z" fill="#fff"/><path d="M104 24 52 70l6 12z" fill="#c7d2fe"/></svg>
+    <span>Paper Plane</span>
   </div>
-  <h1 id="name">Connecting…</h1>
-  <p id="info"></p>
-  <input id="pw" type="password" placeholder="Password" hidden>
-  <button id="btn" hidden>Download</button>
-  <progress id="bar" max="100" value="0" hidden></progress>
-  <p id="msg" class="small"></p>
-</div>
+  <div class="tools">
+    <button class="chip" id="netChip" title="Check the connection services"><i class="dot" id="netDot"></i><span id="netText">Checking…</span></button>
+    <button class="iconbtn" id="themeBtn" title="Switch light/dark theme" aria-label="Switch theme">🌙</button>
+  </div>
+</header>
+
+<main>
+  <div class="panel" id="netPanel" hidden></div>
+
+  <!-- SEND -->
+  <section id="sendView">
+    <h1>Send files straight to another browser.</h1>
+    <p class="lead">No upload, no cloud, no size limit. The file goes directly from your computer to the recipient.</p>
+
+    <div class="card">
+      <div class="drop" id="drop"><b>Drop files here</b>or click to choose</div>
+      <input id="file" type="file" multiple hidden>
+      <div class="picked" id="picked"></div>
+      <div class="opts">
+        <div><label for="pw">Password (optional)</label>
+          <div class="pwrow"><input id="pw" autocomplete="off" placeholder="None"><button class="btn ghost small" id="genPw" type="button" title="Generate a password">🎲</button></div></div>
+        <div><label for="ttl">Link valid for</label>
+          <select id="ttl"><option value="3600000">1 hour</option><option value="86400000">1 day</option><option value="604800000" selected>7 days</option></select></div>
+        <div><label for="max">Stop after</label>
+          <select id="max"><option value="0">Unlimited downloads</option><option value="1">1 download</option><option value="3">3 downloads</option><option value="10">10 downloads</option></select></div>
+      </div>
+      <button class="btn full" id="go" disabled>Create link</button>
+    </div>
+
+    <div id="shares"></div>
+
+    <div class="steps">
+      <div class="step"><b>1. Create a link</b><span>Pick a file, optionally add a password, and copy the link.</span></div>
+      <div class="step"><b>2. Keep this tab open</b><span>The file is read from your computer while it is being downloaded.</span></div>
+      <div class="step"><b>3. They download directly</b><span>Browser to browser, encrypted. Nothing is stored anywhere.</span></div>
+    </div>
+  </section>
+
+  <!-- RECEIVE -->
+  <section id="recvView" hidden>
+    <div class="card center">
+      <div class="big">📦</div>
+      <h1 id="rName" style="font-size:1.4rem;word-break:break-all">Connecting…</h1>
+      <p class="lead" id="rInfo" style="margin-bottom:1rem"></p>
+      <input id="rPw" type="password" placeholder="Password" autocomplete="off" hidden>
+      <button class="btn full" id="rBtn" hidden style="margin-top:.6rem">Download</button>
+      <div class="bar" id="rBar" hidden><i></i></div>
+      <div class="status" id="rMsg" style="justify-content:center"></div>
+      <details><summary>Details</summary><pre id="rLog"></pre></details>
+    </div>
+    <p class="lead center"><a href="./" style="color:var(--accent)">Send a file yourself</a></p>
+  </section>
+</main>
+<footer>Paper Plane · peer-to-peer file transfer · connection set-up uses free public relays, the file never touches them</footer>
 
 <script>
-const BROKER = "wss://0.peerjs.com/peerjs";
+"use strict";
+
+/*LIB*/
 const ICE = [
   { urls: "stun:stun.l.google.com:19302" },
   { urls: "stun:stun1.l.google.com:19302" },
   { urls: "stun:stun.cloudflare.com:3478" },
 ];
+const ALPHABET = "abcdefghijkmnpqrstuvwxyz23456789";
+const rand = (n) => Array.from(crypto.getRandomValues(new Uint8Array(n)), (x) => ALPHABET[x % 32]).join("");
+const fmtSize = (b) => (b >= 1024 ** 3 ? (b / 1024 ** 3).toFixed(2) + " GB" : b >= 1048576 ? (b / 1048576).toFixed(1) + " MB" : Math.max(1, Math.ceil(b / 1024)) + " KB");
+const fmtEta = (s) => (s >= 3600 ? Math.round(s / 360) / 10 + " h" : s >= 60 ? Math.ceil(s / 60) + " min" : Math.max(0, s) + " s");
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-/*PROTOCOL*/
+function withTimeout(p, ms, code) {
+  return new Promise((res, rej) => {
+    const t = setTimeout(() => rej({ code }), ms);
+    p.then((v) => { clearTimeout(t); res(v); }, (e) => { clearTimeout(t); rej(e); });
+  });
+}
+
+function gathered(pc, ms = 4000) {
+  return new Promise((res) => {
+    if (pc.iceGatheringState === "complete") return res();
+    let t;
+    const h = () => { if (pc.iceGatheringState === "complete") done(); };
+    const done = () => { clearTimeout(t); pc.removeEventListener("icegatheringstatechange", h); res(); };
+    pc.addEventListener("icegatheringstatechange", h);
+    t = setTimeout(done, ms);
+  });
+}
+
+// Relay messages are small: drop surplus ICE candidates if the SDP gets too big
+function shrinkSdp(d, limit = 3500) {
+  const lines = d.sdp.split("\r\n");
+  const size = () => JSON.stringify({ cid: "x".repeat(12), sdp: { type: d.type, sdp: lines.join("\r\n") } }).length + 60;
+  while (size() > limit) {
+    const c = lines.map((l, i) => [l, i]).filter(([l]) => l.startsWith("a=candidate"));
+    if (c.length <= 2) break;
+    const weak = [...c].reverse().find(([l]) => { const f = l.split(" "); return f[2].toLowerCase() === "tcp" || (f[4] || "").includes(":"); });
+    lines.splice((weak || c[c.length - 1])[1], 1);
+  }
+  return { type: d.type, sdp: lines.join("\r\n") };
+}
+
+// ---- Relay 1: ntfy.sh (HTTP publish + WebSocket subscribe) ----
+function ntfyTransport(base) {
+  return {
+    name: "ntfy.sh",
+    sub(key, h, since) {
+      const ws = new WebSocket(base.replace(/^http/, "ws") + "/" + key + "/ws" + (since ? "?since=" + since : ""));
+      let ready, fail;
+      const opened = new Promise((res, rej) => { ready = res; fail = rej; });
+      opened.catch(() => {});
+      ws.onmessage = (ev) => {
+        let m; try { m = JSON.parse(ev.data); } catch { return; }
+        if (m.event === "open") { ready(); h.onOpen && h.onOpen(); }
+        else if (m.event === "message") h.onMessage(m.message, { time: m.time });
+      };
+      ws.onerror = () => {};
+      ws.onclose = () => { fail(new Error("closed")); h.onClose && h.onClose(); };
+      return {
+        opened,
+        close() { try { ws.close(); } catch {} },
+        async publish(key2, text) {
+          const r = await fetch(base + "/" + key2, { method: "POST", body: text });
+          if (!r.ok) throw new Error("HTTP " + r.status);
+        },
+      };
+    },
+  };
+}
+
+// ---- Relay 2 and 3: public MQTT brokers over WebSocket (minimal MQTT 3.1.1 client) ----
+function mqttTransport(url) {
+  const name = new URL(url).hostname.replace(/^broker\./, "");
+  const enc = new TextEncoder(), dec = new TextDecoder();
+  const str = (s) => { const b = enc.encode(s); return [b.length >> 8, b.length & 255, ...b]; };
+  const rem = (n) => { const o = []; do { let d = n % 128; n = Math.floor(n / 128); if (n > 0) d |= 128; o.push(d); } while (n > 0); return o; };
+  const packet = (hdr, body) => new Uint8Array([hdr, ...rem(body.length), ...body]);
+  return {
+    name,
+    sub(key, h) {
+      const topic = "paperplane/" + key;
+      const ws = new WebSocket(url, "mqtt");
+      ws.binaryType = "arraybuffer";
+      let ready, fail, buf = new Uint8Array(0), ping = null;
+      const opened = new Promise((res, rej) => { ready = res; fail = rej; });
+      opened.catch(() => {});
+      ws.onopen = () => ws.send(packet(0x10, [...str("MQTT"), 4, 2, 0, 120, ...str("pp-" + rand(12))]));
+      ws.onmessage = (ev) => {
+        const add = new Uint8Array(ev.data);
+        const nb = new Uint8Array(buf.length + add.length); nb.set(buf); nb.set(add, buf.length); buf = nb;
+        for (;;) {
+          if (buf.length < 2) return;
+          let i = 1, mult = 1, len = 0, b;
+          do { if (i >= buf.length) return; b = buf[i++]; len += (b & 127) * mult; mult *= 128; } while (b & 128);
+          if (buf.length < i + len) return;
+          const hdr = buf[0], body = buf.slice(i, i + len);
+          buf = buf.slice(i + len);
+          const type = hdr >> 4;
+          if (type === 2) { // CONNACK
+            if (body[1] !== 0) { fail(new Error("refused")); ws.close(); return; }
+            ws.send(packet(0x82, [0, 1, ...str(topic), 0]));
+          } else if (type === 9) { // SUBACK
+            ready(); h.onOpen && h.onOpen();
+            ping = setInterval(() => { if (ws.readyState === 1) ws.send(new Uint8Array([0xc0, 0])); }, 30000);
+          } else if (type === 3) { // PUBLISH
+            const qos = (hdr >> 1) & 3, tl = (body[0] << 8) | body[1];
+            const off = 2 + tl + (qos ? 2 : 0);
+            h.onMessage(dec.decode(body.slice(off)), {});
+          }
+        }
+      };
+      ws.onerror = () => {};
+      ws.onclose = () => { clearInterval(ping); fail(new Error("closed")); h.onClose && h.onClose(); };
+      return {
+        opened,
+        close() { try { ws.close(); } catch {} },
+        async publish(key2, text) {
+          if (ws.readyState !== 1) throw new Error("not connected");
+          ws.send(packet(0x30, [...str("paperplane/" + key2), ...enc.encode(text)]));
+        },
+      };
+    },
+  };
+}
+
+const TRANSPORTS = [
+  ntfyTransport("https://ntfy.sh"),
+  mqttTransport("wss://broker.hivemq.com:8884/mqtt"),
+  mqttTransport("wss://broker.emqx.io:8084/mqtt"),
+];
+
+// Listens on all relays at once and publishes to all that are up. First answer wins.
+function openSignal(key, h) {
+  const subs = TRANSPORTS.map((t) => ({ t, up: false, sub: null, backoff: 1000, since: Math.floor(Date.now() / 1000) - 5, closed: false, failedOnce: false }));
+  let firstUp, rejectReady;
+  const ready = new Promise((res, rej) => { firstUp = res; rejectReady = rej; });
+  ready.catch(() => {});
+
+  function start(s) {
+    if (s.closed) return;
+    s.sub = s.t.sub(key, {
+      onOpen: () => { s.up = true; s.backoff = 1000; h.onState && h.onState(s.t.name, true); firstUp(); },
+      onMessage: (text, meta) => { if (meta && meta.time) s.since = meta.time; h.onMessage(text, s.t.name); },
+      onClose: () => {
+        s.up = false; s.failedOnce = true;
+        if (!s.closed && h.onState) h.onState(s.t.name, false);
+        if (!h.keepAlive && subs.every((x) => x.failedOnce && !x.up)) rejectReady(new Error("all relays unreachable"));
+        if (!s.closed && h.keepAlive) { setTimeout(() => start(s), s.backoff); s.backoff = Math.min(s.backoff * 2, 30000); }
+      },
+    }, s.since);
+  }
+  subs.forEach(start);
+
+  return {
+    ready,
+    async settle(ms) { const t0 = Date.now(); while (Date.now() - t0 < ms && !subs.every((s) => s.up)) await sleep(100); },
+    upNames: () => subs.filter((s) => s.up).map((s) => s.t.name),
+    async publish(key2, obj) {
+      const text = JSON.stringify(obj);
+      const res = await Promise.allSettled(subs.filter((s) => s.up).map((s) => s.sub.publish(key2, text)));
+      if (!res.some((r) => r.status === "fulfilled")) throw new Error("no relay reachable");
+    },
+    close() { subs.forEach((s) => { s.closed = true; s.sub && s.sub.close(); }); },
+  };
+}
+
+// Round trip through every relay: reports which ones work
+async function selfTest() {
+  const key = "t" + rand(12), echoed = new Set();
+  const sig = openSignal(key, { keepAlive: false, onMessage: (t, via) => { try { if (JSON.parse(t) === "ping") echoed.add(via); } catch {} } });
+  try { await withTimeout(sig.ready, 8000, "service"); await sig.settle(2000); await sig.publish(key, "ping"); } catch {}
+  const up = sig.upNames();
+  const t0 = Date.now();
+  while (Date.now() - t0 < 3000 && echoed.size < up.length) await sleep(100);
+  sig.close();
+  return TRANSPORTS.map((t) => ({ name: t.name, up: up.includes(t.name), echo: echoed.has(t.name) }));
+}
+/*END LIB*/
+
+/*SENDER*/
+const CH = 64 * 1024;             // size of one message
+const BLOCK = 4 * 1024 * 1024;    // how much is read from disk at once
+const WINDOW = 32 * 1024 * 1024;  // max. data the receiver has not yet written to disk
+const HIGH = 8 * 1024 * 1024;     // max. in the send buffer
+const LOW = 1024 * 1024;
+const MAX_TRIES = 5;
+const LOCK_MS = 15 * 60 * 1000;
+
+function safeEq(a, b) {
+  a = String(a); b = String(b);
+  let r = a.length ^ b.length;
+  const n = Math.max(a.length, b.length);
+  for (let i = 0; i < n; i++) r |= (a.charCodeAt(i) || 0) ^ (b.charCodeAt(i) || 0);
+  return r === 0;
+}
+
+function newShare(file, opts = {}) {
+  const share = {
+    id: "pp" + rand(18), file,
+    password: opts.password || "",
+    expires: Date.now() + (opts.ttlMs || 7 * 864e5),
+    maxDownloads: opts.maxDownloads || 0,
+    fails: 0, lockedUntil: 0, stopped: false, channels: new Set(),
+    active: 0, completed: 0, lastSent: 0, online: false, transports: {}, logs: [],
+    onChange() {},
+  };
+  TRANSPORTS.forEach((t) => { share.transports[t.name] = false; });
+  share.log = (t) => {
+    share.logs.push(new Date().toLocaleTimeString("en-GB") + "  " + t);
+    if (share.logs.length > 80) share.logs.shift();
+    share.onChange(share);
+  };
+  return share;
+}
+
+// Protocol, sender -> receiver (JSON): hello, auth, locked, expired, error, done
+//           receiver -> sender (JSON): auth{pw}, start{offset}, ack{bytes}, saved
+// File data goes as binary messages of 64 KB.
+function serveChannel(dc, share) {
+  dc.binaryType = "arraybuffer";
+  share.channels.add(dc);
+  let authed = !share.password, streaming = false, acked = 0, waiters = [];
+  const send = (o) => { if (dc.readyState === "open") dc.send(JSON.stringify(o)); };
+  const wake = () => { const w = waiters; waiters = []; w.forEach((f) => f()); };
+  const wait = () => new Promise((r) => { waiters.push(r); setTimeout(r, 1000); });
+  const isLocked = () => share.lockedUntil > Date.now();
+  const lockMins = () => Math.max(1, Math.ceil((share.lockedUntil - Date.now()) / 60000));
+
+  dc.bufferedAmountLowThreshold = LOW;
+  dc.onbufferedamountlow = wake;
+
+  const hello = () => {
+    if (share.stopped) return dc.close();
+    if (Date.now() > share.expires) return send({ t: "expired" });
+    share.log("Receiver connected directly");
+    send({ t: "hello", name: share.file.name, size: share.file.size, protected: !!share.password, lockedMins: isLocked() ? lockMins() : 0 });
+  };
+  if (dc.readyState === "open") hello(); else dc.onopen = hello;
+
+  dc.onclose = () => {
+    share.channels.delete(dc);
+    if (streaming) { streaming = false; share.active--; }
+    wake();
+    share.onChange(share);
+  };
+
+  async function pump(offset) {
+    streaming = true; share.active++;
+    share.log(offset ? `Sending resumed at ${fmtSize(offset)}` : "Sending started");
+    share.onChange(share);
+    const size = share.file.size;
+    let off = offset, sent = offset;
+    acked = offset;
+    try {
+      while (off < size) {
+        if (dc.readyState !== "open" || share.stopped) throw new Error("closed");
+        const end = Math.min(off + BLOCK, size);
+        const buf = await share.file.slice(off, end).arrayBuffer();
+        for (let p = 0; p < buf.byteLength; p += CH) {
+          while (dc.bufferedAmount > HIGH || sent - acked > WINDOW) {
+            if (dc.readyState !== "open" || share.stopped) throw new Error("closed");
+            await wait();
+          }
+          const part = buf.slice(p, p + CH);
+          dc.send(part);
+          sent += part.byteLength;
+        }
+        off = end;
+        share.lastSent = sent;
+        share.onChange(share);
+      }
+      send({ t: "done" });
+    } catch (_) {
+      share.log("Connection lost during sending (the receiver can resume)");
+    } finally {
+      if (streaming) { streaming = false; share.active--; }
+      share.onChange(share);
+    }
+  }
+
+  dc.onmessage = (ev) => {
+    if (typeof ev.data !== "string") return;
+    let m; try { m = JSON.parse(ev.data); } catch { return; }
+    if (m.t === "ack") {
+      acked = Math.max(acked, Number(m.bytes) || 0);
+      wake();
+    } else if (m.t === "auth") {
+      if (!share.password) return send({ t: "auth", ok: true });
+      if (isLocked()) return send({ t: "locked", mins: lockMins() });
+      if (safeEq(m.pw ?? "", share.password)) {
+        authed = true; share.fails = 0;
+        send({ t: "auth", ok: true });
+      } else {
+        share.fails++;
+        share.log("Wrong password attempt");
+        if (share.fails >= MAX_TRIES) {
+          share.fails = 0;
+          share.lockedUntil = Date.now() + LOCK_MS;
+          share.log("Link locked for 15 minutes (5 wrong passwords)");
+          send({ t: "locked", mins: lockMins() });
+        } else {
+          send({ t: "auth", ok: false, left: MAX_TRIES - share.fails });
+        }
+        share.onChange(share);
+      }
+    } else if (m.t === "start") {
+      if (!authed) return send({ t: "error", msg: "Password required." });
+      if (streaming) return;
+      if (Date.now() > share.expires) return send({ t: "expired" });
+      const off = Number(m.offset) || 0;
+      if (!Number.isInteger(off) || off < 0 || off > share.file.size) return send({ t: "error", msg: "Invalid start position." });
+      pump(off);
+    } else if (m.t === "saved") {
+      share.completed++;
+      share.log("Download completed and saved by the receiver");
+      share.onChange(share);
+      if (share.maxDownloads && share.completed >= share.maxDownloads) {
+        share.log("Download limit reached, link stopped");
+        setTimeout(() => share.closeAll(), 500);
+      }
+    }
+  };
+}
+
+// Keeps listening for receivers and answers each one over WebRTC
+function listen(share) {
+  const peers = new Set(), handled = new Set();
+
+  async function answer(cid, offer) {
+    const pc = new RTCPeerConnection({ iceServers: ICE });
+    peers.add(pc);
+    pc.ondatachannel = (e) => serveChannel(e.channel, share);
+    pc.onconnectionstatechange = () => {
+      share.log("Peer connection: " + pc.connectionState);
+      if (pc.connectionState === "failed" || pc.connectionState === "closed") { pc.close(); peers.delete(pc); }
+    };
+    setTimeout(() => { if (pc.connectionState !== "connected" && !share.stopped) { pc.close(); peers.delete(pc); } }, 60000);
+    await pc.setRemoteDescription(offer);
+    const a = await pc.createAnswer();
+    await pc.setLocalDescription(a);
+    await gathered(pc);
+    await sig.publish(share.id + "-" + cid, { sdp: shrinkSdp(pc.localDescription) });
+  }
+
+  const sig = openSignal(share.id, {
+    keepAlive: true,
+    onState: (name, up) => {
+      share.transports[name] = up;
+      share.online = Object.values(share.transports).some(Boolean);
+      share.log(`Relay ${name}: ${up ? "connected" : "disconnected"}`);
+    },
+    onMessage: (text, via) => {
+      let msg; try { msg = JSON.parse(text); } catch { return; }
+      if (!msg || !/^[a-z0-9]{6,24}$/.test(msg.cid || "") || !msg.sdp || msg.sdp.type !== "offer" || handled.has(msg.cid)) return;
+      handled.add(msg.cid);
+      share.log(`Connection request received (via ${via})`);
+      answer(msg.cid, msg.sdp).then(() => share.log("Answer sent"), (e) => share.log("Could not answer: " + e.message));
+    },
+  });
+
+  share.closeAll = () => {
+    if (share.stopped) return;
+    share.stopped = true;
+    share.online = false;
+    sig.close();
+    peers.forEach((p) => p.close());
+    peers.clear();
+    share.channels.forEach((c) => { try { c.close(); } catch {} });
+    share.log("Link stopped");
+  };
+}
+/*END SENDER*/
+
+/*RECEIVER*/
 const ACK_EVERY = 8 * 1024 * 1024;
 
-// Speaks the protocol with the sender. h = hooks: write(buf), finish(), written(),
-// onHello, onAuth, onLocked, onProgress, onDone, onFail
+// Speaks the protocol with the sender. h = hooks:
+// write(buf), finish(), written(), onHello, onAuth, onLocked, onProgress, onDone, onFail
 function makeReceiver(dc, h) {
   dc.binaryType = "arraybuffer";
-  let queue = Promise.resolve();
-  let sinceAck = 0;
-  let failed = false;
+  let queue = Promise.resolve(), sinceAck = 0, failed = false;
   const send = (o) => { if (dc.readyState === "open") dc.send(JSON.stringify(o)); };
   const fail = (msg) => { if (!failed) { failed = true; h.onFail(msg); } };
 
@@ -63,6 +520,7 @@ function makeReceiver(dc, h) {
         queue = queue.then(async () => {
           if (failed) return;
           await h.finish();
+          send({ t: "saved" });
           h.onDone();
         }).catch((e) => fail("Saving failed: " + e.message));
       }
@@ -83,29 +541,207 @@ function makeReceiver(dc, h) {
     drained: () => queue,
   };
 }
-/*END PROTOCOL*/
 
+// Finds the sender through the relays and opens a direct WebRTC data channel.
+// Rejects with {code: "service" | "offline" | "nodirect"}.
+async function dialSender(senderId, say, log = () => {}) {
+  const cid = rand(12);
+  const pc = new RTCPeerConnection({ iceServers: ICE });
+  const early = []; // messages that arrive before the protocol handler is attached
+  const dc = pc.createDataChannel("paperplane", { ordered: true });
+  dc.onmessage = (e) => early.push(e);
+  const dcOpen = new Promise((res) => { dc.onopen = res; });
+  let gotAnswer, answered = false;
+  const answerP = new Promise((r) => { gotAnswer = r; });
+  const sig = openSignal(senderId + "-" + cid, {
+    keepAlive: false,
+    onState: (name, up) => log(`Relay ${name}: ${up ? "connected" : "unreachable"}`),
+    onMessage: (text, via) => {
+      let m; try { m = JSON.parse(text); } catch { return; }
+      if (m && m.sdp && m.sdp.type === "answer" && !answered) { answered = true; log(`Answer received (via ${via})`); gotAnswer(m); }
+    },
+  });
+  pc.oniceconnectionstatechange = () => log("ICE: " + pc.iceConnectionState);
+  try {
+    say("Contacting the sender…");
+    await withTimeout(sig.ready, 10000, "service");
+    await sig.settle(1500);
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+    await gathered(pc);
+    await sig.publish(senderId, { cid, sdp: shrinkSdp(pc.localDescription) });
+    log("Connection request sent");
+    say("Waiting for the sender…");
+    const ans = await withTimeout(answerP, 15000, "offline");
+    say("Connecting directly…");
+    await pc.setRemoteDescription(ans.sdp);
+    await withTimeout(dcOpen, 25000, "nodirect");
+    log("Direct connection established");
+    sig.close();
+    return { pc, dc, early };
+  } catch (e) {
+    sig.close();
+    try { pc.close(); } catch {}
+    throw e && e.code ? e : { code: "service" };
+  }
+}
+/*END RECEIVER*/
+
+/* ======================= UI ======================= */
 const $ = (id) => document.getElementById(id);
-const fmt = (b) =>
-  b >= 1024 ** 3 ? (b / 1024 ** 3).toFixed(2) + " GB" : b >= 1048576 ? (b / 1048576).toFixed(1) + " MB" : Math.ceil(b / 1024) + " KB";
-const rand = (n) => Array.from(crypto.getRandomValues(new Uint8Array(n)), (x) => "abcdefghijkmnpqrstuvwxyz23456789"[x % 32]).join("");
+const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
 
-const senderId = location.hash.slice(1);
-const state = { info: null, sink: null, authed: false, pw: "", done: false, rx: null, pc: null, ws: null, retries: 0, t0: 0, started: false };
-
-function say(text, cls = "small") { $("msg").textContent = text; $("msg").className = cls; }
-function fatal(text) {
-  state.done = true;
-  $("btn").hidden = true; $("pw").hidden = true; $("bar").hidden = true;
-  say(text, "err");
-  closeConn();
+// ---- theme ----
+function setTheme(t) {
+  document.documentElement.dataset.theme = t;
+  $("themeBtn").textContent = t === "dark" ? "☀️" : "🌙";
+  store.set("pp-theme", t);
 }
-function closeConn() {
-  try { state.ws && state.ws.close(); } catch {}
-  try { state.pc && state.pc.close(); } catch {}
+setTheme(store.get("pp-theme") || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
+$("themeBtn").onclick = () => setTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark");
+
+const link = (id) => location.href.split("#")[0] + "#" + id;
+const receiverId = location.hash.slice(1);
+
+/* ---------- connection check (chip in the header) ---------- */
+async function runCheck() {
+  $("netDot").className = "dot"; $("netText").textContent = "Checking…";
+  const res = await selfTest();
+  const ok = res.filter((r) => r.echo).length;
+  $("netDot").className = "dot " + (ok === res.length ? "on" : ok > 0 ? "mid" : "off");
+  $("netText").textContent = ok === res.length ? "Connected" : ok > 0 ? `Connected (${ok}/${res.length})` : "Offline";
+  $("netPanel").innerHTML = "<b>Connection services</b><br>" + res.map((r) => `${r.echo ? "✅" : "❌"} ${r.name}${r.echo ? "" : r.up ? " (connected, no echo)" : " (unreachable)"}`).join("<br>") +
+    "<br><span class='meta'>At least one must work. They only help to set up the direct connection.</span>";
+  return res;
+}
+$("netChip").onclick = () => { if ($("netPanel").hidden) { $("netPanel").hidden = false; } else { $("netPanel").hidden = true; } runCheck(); };
+
+/* ---------- SEND VIEW ---------- */
+let picked = [];
+const shares = [];
+
+function pickFiles(list) {
+  picked = [...list];
+  $("picked").innerHTML = "";
+  picked.forEach((f) => {
+    const row = document.createElement("div"); row.className = "pick";
+    const a = document.createElement("span"); a.textContent = f.name;
+    const b = document.createElement("span"); b.textContent = fmtSize(f.size);
+    row.append(a, b); $("picked").append(row);
+  });
+  $("go").disabled = picked.length === 0;
+  $("go").textContent = picked.length > 1 ? `Create ${picked.length} links` : "Create link";
 }
 
-// ---------- storage: straight to disk (Chrome/Edge) or in memory ----------
+function startSend() {
+  $("drop").onclick = () => $("file").click();
+  $("file").onchange = (e) => pickFiles(e.target.files);
+  ["dragover", "dragenter"].forEach((ev) => document.addEventListener(ev, (e) => { e.preventDefault(); $("drop").classList.add("over"); }));
+  ["dragleave", "drop"].forEach((ev) => document.addEventListener(ev, (e) => { e.preventDefault(); $("drop").classList.remove("over"); }));
+  document.addEventListener("drop", (e) => { if (e.dataTransfer.files.length) pickFiles(e.dataTransfer.files); });
+  $("genPw").onclick = () => { $("pw").value = rand(10); };
+
+  $("go").onclick = () => {
+    for (const f of picked) {
+      if (f.size === 0) continue;
+      const share = newShare(f, { password: $("pw").value, ttlMs: Number($("ttl").value), maxDownloads: Number($("max").value) });
+      share.link = link(share.id);
+      share.onChange = scheduleRender;
+      shares.unshift(share);
+      listen(share);
+      share.log("Link created");
+      $("shares").prepend(makeCard(share));
+    }
+    syncLock();
+    pickFiles([]); $("file").value = ""; $("pw").value = "";
+    scheduleRender();
+  };
+
+  runCheck();
+  setInterval(() => { shares.forEach((s) => { if (!s.stopped && Date.now() > s.expires) { s.log("Link expired"); s.closeAll(); } }); scheduleRender(); }, 15000);
+  window.addEventListener("beforeunload", (e) => { if (shares.some((s) => !s.stopped)) { e.preventDefault(); e.returnValue = ""; } });
+}
+
+// A Web Lock keeps Chrome from freezing this tab while links are active
+let releaseLock = null;
+function syncLock() {
+  const need = shares.some((s) => !s.stopped);
+  if (need && !releaseLock && navigator.locks) navigator.locks.request("paperplane-active", () => new Promise((res) => { releaseLock = res; }));
+  else if (!need && releaseLock) { releaseLock(); releaseLock = null; }
+}
+
+function makeCard(share) {
+  const el = document.createElement("div");
+  el.className = "card"; el.id = share.id;
+  el.innerHTML = `
+    <div class="row between"><div><div class="fname"></div><div class="meta"></div></div><button class="btn danger small stop">Stop</button></div>
+    <div class="linkrow"><input class="lnk" readonly><button class="btn small copy">Copy</button><button class="btn ghost small share" hidden>Share</button></div>
+    <div class="bar" hidden><i></i></div>
+    <div class="status"><i class="dot"></i><span class="st"></span></div>
+    <details><summary>Details</summary><pre class="log"></pre></details>`;
+  el.querySelector(".fname").textContent = share.file.name;
+  el.querySelector(".lnk").value = share.link;
+  el.querySelector(".lnk").onclick = (e) => e.target.select();
+  el.querySelector(".copy").onclick = async (e) => {
+    try { await navigator.clipboard.writeText(share.link); } catch { el.querySelector(".lnk").select(); document.execCommand("copy"); }
+    e.target.textContent = "Copied ✓"; setTimeout(() => (e.target.textContent = "Copy"), 1500);
+  };
+  if (navigator.share) {
+    const sb = el.querySelector(".share"); sb.hidden = false;
+    sb.onclick = () => navigator.share({ title: "Paper Plane", text: share.file.name, url: share.link }).catch(() => {});
+  }
+  el.querySelector(".stop").onclick = () => { share.closeAll(); syncLock(); };
+  share.el = el;
+  return el;
+}
+
+let renderQueued = false;
+function scheduleRender() { if (!renderQueued) { renderQueued = true; requestAnimationFrame(() => { renderQueued = false; shares.forEach(renderShare); }); } }
+
+function renderShare(s) {
+  const el = s.el; if (!el) return;
+  const left = Math.max(0, s.expires - Date.now());
+  const exp = s.stopped ? "" : " · expires in " + (left >= 86400000 ? Math.round(left / 86400000) + " d" : left >= 3600000 ? Math.round(left / 360000) / 10 + " h" : Math.ceil(left / 60000) + " min");
+  el.querySelector(".meta").textContent = `${fmtSize(s.file.size)} · ${s.password ? "password: " + s.password : "no password"}${s.maxDownloads ? " · max " + s.maxDownloads + " download" + (s.maxDownloads > 1 ? "s" : "") : ""}${exp}`;
+  const active = s.active > 0, bar = el.querySelector(".bar");
+  bar.hidden = !active;
+  if (active) bar.firstElementChild.style.width = (s.lastSent / s.file.size) * 100 + "%";
+
+  const up = Object.values(s.transports).filter(Boolean).length;
+  let text, dot = "on";
+  if (s.stopped) { text = "Stopped."; dot = ""; }
+  else if (!s.online) { text = "Connecting to the connection services…"; dot = "mid"; }
+  else if (active) text = `Sending to ${s.active} recipient${s.active > 1 ? "s" : ""}: ${fmtSize(s.lastSent)} of ${fmtSize(s.file.size)}`;
+  else { text = "Ready. Waiting for the recipient. Keep this tab open."; if (up < TRANSPORTS.length) dot = "mid"; }
+  if (s.completed) text += ` · ${s.completed} download${s.completed > 1 ? "s" : ""} completed`;
+  if (s.lockedUntil > Date.now()) text += " · locked after 5 wrong passwords";
+  el.querySelector(".dot").className = "dot " + dot;
+  el.querySelector(".st").textContent = text;
+  el.querySelector(".stop").hidden = s.stopped;
+  const pre = el.querySelector(".log");
+  const atEnd = pre.scrollTop + pre.clientHeight >= pre.scrollHeight - 5;
+  pre.textContent = s.logs.join("\n");
+  if (atEnd) pre.scrollTop = pre.scrollHeight;
+}
+
+/* ---------- RECEIVE VIEW ---------- */
+const R = { info: null, sink: null, authed: false, pw: "", done: false, rx: null, pc: null, retries: 0, t0: 0, started: false };
+const rsay = (t, cls = "") => { $("rMsg").textContent = t; $("rMsg").className = "status " + cls; };
+const rlog = (t) => { const p = $("rLog"); p.textContent += (p.textContent ? "\n" : "") + new Date().toLocaleTimeString("en-GB") + "  " + t; p.scrollTop = p.scrollHeight; };
+const MSG = {
+  service: "Could not reach the connection services. Check your internet connection and try again.",
+  offline: "The sender is not online. Ask the sender to keep the Paper Plane tab open.",
+  nodirect: "Could not make a direct connection. This may be a firewall or network issue; try another network (for example mobile data).",
+};
+
+function rfatal(text) {
+  R.done = true;
+  ["rBtn", "rPw", "rBar"].forEach((i) => ($(i).hidden = true));
+  rsay(text, "err"); rlog("Stopped: " + text);
+  try { R.pc && R.pc.close(); } catch {}
+}
+
+// storage: straight to disk (Chrome/Edge) or in memory
 async function makeSink(info) {
   if (window.showSaveFilePicker) {
     const handle = await window.showSaveFilePicker({ suggestedName: info.name });
@@ -125,171 +761,113 @@ async function makeSink(info) {
   };
 }
 
-// ---------- connecting to the sender ----------
-function connect() {
-  closeConn();
-  const myId = "lp-r-" + rand(14), cid = rand(10);
-  const ws = new WebSocket(`${BROKER}?key=peerjs&id=${myId}&token=${rand(12)}`);
-  state.ws = ws;
-  const pc = new RTCPeerConnection({ iceServers: ICE });
-  state.pc = pc;
-  const dc = pc.createDataChannel("paperplane", { ordered: true });
-  let gotAnswer = false, opened = false, remoteSet = false;
-  const pendingCand = [];
-  const hb = setInterval(() => ws.readyState === 1 && ws.send(JSON.stringify({ type: "HEARTBEAT" })), 5000);
-  const wsSend = (o) => ws.readyState === 1 && ws.send(JSON.stringify(o));
-
-  say("Connecting to the sender…");
-
-  const timeout = setTimeout(() => {
-    if (!opened) {
-      clearInterval(hb);
-      retryOrFail(gotAnswer
-        ? "Could not make a direct connection. This may be a firewall or network issue; try another network (for example mobile data)."
-        : "The sender is not online. Ask the sender to keep the Paper Plane tab open.");
-    }
-  }, 25000);
-
-  pc.onicecandidate = (e) => { if (e.candidate) wsSend({ type: "CANDIDATE", dst: senderId, payload: { candidate: e.candidate.toJSON(), cid } }); };
-
-  ws.onmessage = async (ev) => {
-    let m; try { m = JSON.parse(ev.data); } catch { return; }
-    if (m.type === "OPEN") {
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-      wsSend({ type: "OFFER", dst: senderId, payload: { sdp: pc.localDescription.toJSON(), cid } });
-    } else if (m.type === "ANSWER" && m.src === senderId && m.payload.cid === cid) {
-      gotAnswer = true;
-      await pc.setRemoteDescription(m.payload.sdp);
-      remoteSet = true;
-      pendingCand.splice(0).forEach((c) => pc.addIceCandidate(c).catch(() => {}));
-    } else if (m.type === "CANDIDATE" && m.src === senderId && m.payload.cid === cid) {
-      remoteSet ? pc.addIceCandidate(m.payload.candidate).catch(() => {}) : pendingCand.push(m.payload.candidate);
-    } else if (m.type === "ID-TAKEN") {
-      fatal("Something went wrong with the connection. Refresh the page.");
-    }
-  };
-
-  dc.onopen = () => { opened = true; clearTimeout(timeout); clearInterval(hb); ws.close(); };
-  dc.onclose = async () => {
-    clearInterval(hb);
-    if (state.done || !opened || state.pc !== pc) return;
-    // Connection dropped: finish writing what arrived, then resume automatically
-    say("Connection lost, reconnecting…");
-    await state.rx.drained();
-    retryOrFail("Connection lost and could not be restored. Open the link again and choose the same file.");
-  };
-
-  state.rx = makeReceiver(dc, {
-    write: (b) => state.sink.write(b),
-    finish: () => state.sink.close(),
-    written: () => state.sink.bytes,
-    onHello: onHello,
-    onAuth: onAuth,
-    onLocked: (m) => say(`Too many wrong attempts. Try again in ${m.mins} min.`, "err"),
-    onProgress: onProgress,
-    onDone: () => {
-      state.done = true;
-      $("bar").value = 100;
-      $("btn").hidden = true;
-      say("Done! The file has been saved.", "ok");
-      closeConn();
-    },
-    onFail: fatal,
-  });
-}
-
 let retryTimer = null;
 function retryOrFail(finalMsg) {
-  if (state.done) return;
-  if (state.retries >= (state.sink ? 30 : 2)) return fatal(finalMsg);
-  state.retries++;
+  if (R.done) return;
+  if (R.retries >= (R.sink ? 30 : 1)) return rfatal(finalMsg);
+  R.retries++;
+  rlog("Retrying…");
   clearTimeout(retryTimer);
-  retryTimer = setTimeout(connect, 3000);
+  retryTimer = setTimeout(rconnect, 3000);
 }
 
-// ---------- protocol events ----------
-function onHello(info) {
-  state.info = info;
-  state.retries = 0;
-  $("name").textContent = info.name;
-  $("info").textContent = fmt(info.size);
-  if (info.lockedMins) say(`Too many wrong attempts. Try again in ${info.lockedMins} min.`, "err");
-  else say("");
+async function rconnect() {
+  try { R.pc && R.pc.close(); } catch {}
+  let conn;
+  try { conn = await dialSender(receiverId, (t) => rsay(t), rlog); }
+  catch (e) { return retryOrFail(MSG[e.code] || MSG.service); }
+  const { pc, dc, early } = conn;
+  R.pc = pc;
+  dc.onclose = async () => {
+    if (R.done || R.pc !== pc) return;
+    rsay("Connection lost, reconnecting…"); rlog("Connection lost");
+    await R.rx.drained();
+    retryOrFail("Connection lost and could not be restored. Open the link again and choose the same file.");
+  };
+  R.rx = makeReceiver(dc, {
+    write: (b) => R.sink.write(b),
+    finish: () => R.sink.close(),
+    written: () => R.sink.bytes,
+    onHello: onHello, onAuth: onAuth,
+    onLocked: (m) => rsay(`Too many wrong attempts. Try again in ${m.mins} min.`, "err"),
+    onProgress: onProgress,
+    onDone: () => {
+      R.done = true; $("rBar").firstElementChild.style.width = "100%";
+      $("rBtn").hidden = true; rsay("Done! The file has been saved. ✅", "ok"); rlog("File saved");
+      try { pc.close(); } catch {}
+    },
+    onFail: rfatal,
+  });
+  early.forEach((e) => dc.onmessage(e));
+}
 
-  if (state.sink) { // resuming after a dropped connection
-    if (info.protected) state.rx.auth(state.pw); else state.rx.start(state.sink.bytes);
-    return;
-  }
-  if (!state.started) {
-    $("pw").hidden = !info.protected;
-    $("btn").hidden = false;
-    $("btn").disabled = false;
-    $("btn").textContent = "Download";
+function onHello(info) {
+  R.info = info; R.retries = 0;
+  $("rName").textContent = info.name;
+  $("rInfo").textContent = fmtSize(info.size);
+  rlog(`Sender says hello: ${info.name} (${fmtSize(info.size)})`);
+  if (info.lockedMins) rsay(`Too many wrong attempts. Try again in ${info.lockedMins} min.`, "err"); else rsay("");
+  if (R.sink) { if (info.protected) R.rx.auth(R.pw); else R.rx.start(R.sink.bytes); return; }
+  if (!R.started) {
+    $("rPw").hidden = !info.protected; $("rBtn").hidden = false; $("rBtn").disabled = false; $("rBtn").textContent = "Download";
   }
 }
 
 function onAuth(m) {
   if (m.ok) {
-    state.authed = true;
-    if (state.sink) { state.rx.start(state.sink.bytes); return; }
-    $("pw").hidden = true;
+    R.authed = true;
+    if (R.sink) { R.rx.start(R.sink.bytes); return; }
+    $("rPw").hidden = true;
     beginSave(true);
   } else {
-    $("btn").disabled = false;
-    say(`Wrong password. ${m.left} ${m.left === 1 ? "attempt" : "attempts"} left.`, "err");
+    $("rBtn").disabled = false;
+    rsay(`Wrong password. ${m.left} ${m.left === 1 ? "attempt" : "attempts"} left.`, "err");
   }
 }
 
 async function beginSave(auto) {
   let sink;
-  try {
-    sink = await makeSink(state.info);
-  } catch (e) {
-    if (e.name === "AbortError") { $("btn").disabled = false; $("btn").textContent = "Choose save location"; $("btn").hidden = false; return; }
-    if (auto && (e.name === "SecurityError" || e.name === "NotAllowedError")) {
-      $("btn").disabled = false; $("btn").textContent = "Choose save location"; $("btn").hidden = false;
-      say("Password correct. Now choose where to save the file.", "ok");
-      return;
-    }
-    return fatal("Could not open the file: " + e.message);
+  try { sink = await makeSink(R.info); }
+  catch (e) {
+    $("rBtn").disabled = false; $("rBtn").hidden = false; $("rBtn").textContent = "Choose save location";
+    if (e.name === "AbortError") return;
+    if (auto && (e.name === "SecurityError" || e.name === "NotAllowedError")) { rsay("Password correct. Now choose where to save the file.", "ok"); return; }
+    return rfatal("Could not open the file: " + e.message);
   }
-  state.sink = sink;
-  state.started = true;
-  state.t0 = Date.now();
-  $("btn").hidden = true;
-  $("bar").hidden = false;
-  say(window.showSaveFilePicker || state.info.size < 1.5 * 1024 ** 3
-    ? "Downloading… keep this tab open."
-    : "Note: this browser keeps the file in memory. Use Chrome or Edge for large files.", "small");
-  state.rx.start(0);
+  R.sink = sink; R.started = true; R.t0 = Date.now();
+  $("rBtn").hidden = true; $("rBar").hidden = false;
+  rsay(window.showSaveFilePicker || R.info.size < 1.5 * 1024 ** 3 ? "Downloading… keep this tab open." : "Note: this browser keeps the file in memory. Use Chrome or Edge for large files.");
+  rlog("Download started");
+  R.rx.start(0);
 }
 
-$("btn").addEventListener("click", () => {
-  if (!state.info) return;
-  if (state.info.protected && !state.authed) {
-    state.pw = $("pw").value;
-    if (!state.pw) return;
-    $("btn").disabled = true;
-    state.rx.auth(state.pw);
-  } else {
-    beginSave(false);
-  }
-});
+$("rBtn").onclick = () => {
+  if (!R.info) return;
+  if (R.info.protected && !R.authed) {
+    R.pw = $("rPw").value; if (!R.pw) return;
+    $("rBtn").disabled = true; R.rx.auth(R.pw);
+  } else beginSave(false);
+};
+$("rPw").addEventListener("keydown", (e) => { if (e.key === "Enter") $("rBtn").click(); });
 
 function onProgress() {
-  const done = state.sink.bytes, size = state.info.size;
-  $("bar").value = (done / size) * 100;
-  const secs = Math.max((Date.now() - state.t0) / 1000, 1);
-  const speed = done / secs;
-  const left = Math.round((size - done) / Math.max(speed, 1));
-  $("msg").textContent = `${fmt(done)} of ${fmt(size)} · ${fmt(speed)}/s · about ${left >= 3600 ? Math.round(left / 360) / 10 + " h" : left >= 60 ? Math.ceil(left / 60) + " min" : left + " s"} left`;
+  const done = R.sink.bytes, size = R.info.size;
+  $("rBar").firstElementChild.style.width = (done / size) * 100 + "%";
+  const speed = done / Math.max((Date.now() - R.t0) / 1000, 1);
+  rsay(`${fmtSize(done)} of ${fmtSize(size)} · ${fmtSize(speed)}/s · about ${fmtEta(Math.round((size - done) / Math.max(speed, 1)))} left`);
+  document.title = Math.floor((done / size) * 100) + "% · Paper Plane";
 }
 
-window.addEventListener("beforeunload", (e) => { if (state.started && !state.done) { e.preventDefault(); e.returnValue = ""; } });
+function startReceive() {
+  $("sendView").hidden = true; $("recvView").hidden = false; $("netChip").hidden = true;
+  window.addEventListener("beforeunload", (e) => { if (R.started && !R.done) { e.preventDefault(); e.returnValue = ""; } });
+  window.addEventListener("hashchange", () => location.reload());
+  if (!window.RTCPeerConnection) return rfatal("This browser does not support direct connections.");
+  rconnect();
+}
 
-if (!senderId) fatal("This is not a valid link.");
-else if (!window.RTCPeerConnection) fatal("This browser does not support direct connections.");
-else connect();
+/* ---------- start ---------- */
+if (receiverId) startReceive(); else startSend();
 </script>
-</body></html>
+</body>
+</html>
