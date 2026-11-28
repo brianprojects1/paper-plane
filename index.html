@@ -80,7 +80,7 @@ footer{text-align:center;color:var(--muted);font-size:.82rem;padding:0 1rem 2rem
     <p class="lead">No upload, no cloud, no size limit. The file goes directly from your computer to the recipient.</p>
 
     <div class="card">
-      <div class="drop" id="drop"><b>Drop files here</b>or click to choose</div>
+      <div class="drop" id="drop"><b>Drop files here</b>or click to choose · press Ctrl+V to paste text or files</div>
       <input id="file" type="file" multiple hidden>
       <div class="picked" id="picked"></div>
       <div class="opts">
@@ -639,6 +639,20 @@ function startSend() {
   ["dragover", "dragenter"].forEach((ev) => document.addEventListener(ev, (e) => { e.preventDefault(); $("drop").classList.add("over"); }));
   ["dragleave", "drop"].forEach((ev) => document.addEventListener(ev, (e) => { e.preventDefault(); $("drop").classList.remove("over"); }));
   document.addEventListener("drop", (e) => { if (e.dataTransfer.files.length) pickFiles(e.dataTransfer.files); });
+  // Paste text or files to send them. Pasting into a form field keeps working as usual.
+  document.addEventListener("paste", (e) => {
+    if (e.target.closest && e.target.closest("input, textarea, select")) return;
+    const data = e.clipboardData;
+    if (!data) return;
+    let files = [...data.files];
+    if (!files.length) {
+      const text = data.getData("text/plain");
+      if (!text.trim()) return;
+      files = [new File([text], "clipboard.txt", { type: "text/plain" })];
+    }
+    e.preventDefault();
+    pickFiles(files);
+  });
   $("genPw").onclick = () => { $("pw").value = rand(10); };
 
   $("go").onclick = () => {
